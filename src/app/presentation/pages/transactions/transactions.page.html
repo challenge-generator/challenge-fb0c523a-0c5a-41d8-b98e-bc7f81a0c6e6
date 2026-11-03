@@ -1,0 +1,182 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Movimientos</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="exportTransactions()">
+        <ion-icon slot="icon-only" name="download-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="page-container">
+    <div class="header-section">
+      <h2 class="section-title">Historial de Transacciones</h2>
+      <p class="section-subtitle">Consulta todos tus movimientos financieros</p>
+    </div>
+
+    <div class="account-selector" *ngIf="accounts.length > 0">
+      <ion-item lines="none" class="account-select-item">
+        <ion-label position="floating">Seleccionar Cuenta</ion-label>
+        <ion-select 
+          [(ngModel)]="selectedAccountId" 
+          (ionChange)="onAccountChange($event)"
+          interface="popover"
+          class="account-select">
+          <ion-select-option *ngFor="let account of accounts" [value]="account.id">
+            {{ account.accountType }} - {{ account.accountNumber | slice:-4 }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+    </div>
+
+    <div class="filters-section">
+      <ion-searchbar
+        [(ngModel)]="searchTerm"
+        (ionChange)="onSearchChange($event)"
+        placeholder="Buscar por descripción o referencia"
+        [debounce]="300"
+        show-clear-button="always">
+      </ion-searchbar>
+
+      <div class="filter-row">
+        <ion-select
+          [(ngModel)]="filterType"
+          (ionChange)="onFilterChange($event)"
+          interface="popover"
+          placeholder="Tipo"
+          class="filter-select">
+          <ion-select-option value="all">Todos</ion-select-option>
+          <ion-select-option value="deposit">Depósitos</ion-select-option>
+          <ion-select-option value="withdrawal">Retiros</ion-select-option>
+          <ion-select-option value="transfer">Transferencias</ion-select-option>
+          <ion-select-option value="payment">Pagos</ion-select-option>
+        </ion-select>
+
+        <ion-select
+          [(ngModel)]="sortOrder"
+          (ionChange)="onSortChange($event)"
+          interface="popover"
+          placeholder="Ordenar"
+          class="filter-select">
+          <ion-select-option value="date">Fecha</ion-select-option>
+          <ion-select-option value="amount">Monto</ion-select-option>
+          <ion-select-option value="type">Tipo</ion-select-option>
+        </ion-select>
+
+        <ion-button fill="clear" (click)="clearFilters()" *ngIf="searchTerm || filterType !== 'all'">
+          <ion-icon slot="icon-only" name="close-circle"></ion-icon>
+        </ion-button>
+      </div>
+    </div>
+
+    <div class="transactions-summary" *ngIf="filteredTransactions.length > 0">
+      <ion-card class="summary-card">
+        <ion-card-content>
+          <div class="summary-stats">
+            <div class="stat-item">
+              <span class="stat-label">Total Transacciones</span>
+              <span class="stat-value">{{ getFilteredCount() }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Monto Total</span>
+              <span class="stat-value" [class.positive]="getTotalAmount() > 0" [class.negative]="getTotalAmount() < 0">
+                {{ getTotalAmount() | currency }}
+              </span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div class="transactions-list" *ngIf="!isLoading && filteredTransactions.length > 0; else noTransactions">
+      <ion-list lines="full" class="transactions-ion-list">
+        <app-transaction-item
+          *ngFor="let transaction of filteredTransactions; trackBy: trackByTransactionId"
+          [transaction]="transaction"
+          [typeLabel]="getTransactionTypeLabel(transaction.type)"
+          [statusLabel]="getStatusLabel(transaction.status)"
+          [statusColor]="getStatusColor(transaction.status)"
+          [icon]="getTransactionIcon(transaction.type)"
+          (transactionClick)="showTransactionDetails($event)">
+        </app-transaction-item>
+      </ion-list>
+    </div>
+
+    <ng-template #noTransactions>
+      <div class="empty-state">
+        <ion-icon name="receipt-outline" class="empty-icon"></ion-icon>
+        <h3 *ngIf="!isLoading">No hay transacciones</h3>
+        <p *ngIf="!isLoading">
+          {{ searchTerm || filterType !== 'all' ? 'No hay resultados para los filtros aplicados' : 'No hay movimientos en esta cuenta' }}
+        </p>
+        <ion-button expand="block" (click)="clearFilters()" *ngIf="searchTerm || filterType !== 'all'">
+          <ion-icon slot="start" name="refresh"></ion-icon>
+          Limpiar Filtros
+        </ion-button>
+        <ion-button expand="block" (click)="refreshTransactions()" *ngIf="!searchTerm && filterType === 'all'">
+          <ion-icon slot="start" name="sync"></ion-icon>
+          Actualizar
+        </ion-button>
+      </div>
+    </ng-template>
+
+    <div *ngIf="isLoading" class="loading-container">
+      <ion-spinner name="bubbles" class="loading-spinner"></ion-spinner>
+      <p>Cargando transacciones...</p>
+    </div>
+
+    <div *ngIf="errorMessage" class="error-container">
+      <ion-icon name="error-outline" class="error-icon"></ion-icon>
+      <p>{{ errorMessage }}</p>
+      <ion-button expand="block" (click)="loadTransactions()">
+        <ion-icon slot="start" name="refresh"></ion-icon>
+        Reintentar
+      </ion-button>
+    </div>
+  </div>
+
+  <ion-refresher slot="fixed" (ionRefresh)="refreshTransactions()">
+    <ion-refresher-content
+      pullingText="Desliza para actualizar"
+      refreshingSpinner="circles"
+      refreshingText="Actualizando transacciones...">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <ion-infinite-scroll (ionInfinite)="loadMore($event)" [disabled]="!hasMoreTransactions()">
+    <ion-infinite-scroll-content
+      loadingSpinner="bubbles"
+      loadingText="Cargando más transacciones...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <ion-tabs>
+      <ion-tab-bar slot="bottom">
+        <ion-tab-button tab="home">
+          <ion-icon name="home"></ion-icon>
+          <ion-label>Inicio</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="accounts">
+          <ion-icon name="wallet"></ion-icon>
+          <ion-label>Cuentas</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="transactions" selected="true">
+          <ion-icon name="swap-horizontal"></ion-icon>
+          <ion-label>Movimientos</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="profile">
+          <ion-icon name="person"></ion-icon>
+          <ion-label>Perfil</ion-label>
+        </ion-tab-button>
+      </ion-tab-bar>
+    </ion-tabs>
+  </ion-toolbar>
+</ion-footer>

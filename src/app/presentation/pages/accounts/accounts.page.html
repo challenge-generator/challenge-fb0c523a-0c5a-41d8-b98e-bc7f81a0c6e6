@@ -1,0 +1,118 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Mis Cuentas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="page-container">
+    <div class="header-section">
+      <h2 class="section-title">Cuentas Bancarias</h2>
+      <p class="section-subtitle">Administra tus cuentas y consulta tu saldo</p>
+    </div>
+
+    <div class="accounts-summary" *ngIf="accounts.length > 0">
+      <ion-card class="summary-card">
+        <ion-card-header>
+          <ion-card-subtitle>Saldo Total</ion-card-subtitle>
+          <ion-card-title class="total-balance">{{ getTotalBalance() | currency:defaultCurrency }}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="summary-stats">
+            <div class="stat-item">
+              <span class="stat-label">Cuentas Activas</span>
+              <span class="stat-value">{{ getActiveAccountsCount() }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Promedio</span>
+              <span class="stat-value">{{ getAverageBalance() | currency:defaultCurrency }}</span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div class="accounts-list" *ngIf="accounts.length > 0; else noAccounts">
+      <ion-list lines="full" class="accounts-ion-list">
+        <ion-item-group>
+          <ion-item-divider color="light">
+            <ion-label>Tus Cuentas</ion-label>
+          </ion-item-divider>
+          
+          <app-account-card 
+            *ngFor="let account of accounts; trackBy: trackByAccountId"
+            [account]="account"
+            (accountSelected)="onAccountSelected($event)"
+            (accountAction)="onAccountAction($event)">
+          </app-account-card>
+        </ion-item-group>
+      </ion-list>
+    </div>
+
+    <ng-template #noAccounts>
+      <div class="empty-state">
+        <ion-icon name="wallet-outline" class="empty-icon"></ion-icon>
+        <h3>No tienes cuentas registradas</h3>
+        <p>Contacta con tu banco para abrir una cuenta</p>
+        <ion-button expand="block" (click)="refreshAccounts()">
+          <ion-icon slot="start" name="refresh"></ion-icon>
+          Actualizar
+        </ion-button>
+      </div>
+    </ng-template>
+
+    <div class="action-buttons">
+      <ion-button expand="block" color="secondary" (click)="openNewAccountModal()">
+        <ion-icon slot="start" name="add-circle"></ion-icon>
+        Nueva Cuenta
+      </ion-button>
+      <ion-button expand="block" fill="outline" (click)="refreshAccounts()">
+        <ion-icon slot="start" name="sync"></ion-icon>
+        Sincronizar
+      </ion-button>
+    </div>
+  </div>
+
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content
+      pullingText="Desliza para actualizar"
+      refreshingSpinner="circles"
+      refreshingText="Actualizando cuentas...">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <ion-infinite-scroll (ionInfinite)="loadMoreAccounts($event)">
+    <ion-infinite-scroll-content
+      loadingSpinner="bubbles"
+      loadingText="Cargando más cuentas...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <ion-tabs>
+      <ion-tab-bar slot="bottom">
+        <ion-tab-button tab="home">
+          <ion-icon name="home"></ion-icon>
+          <ion-label>Inicio</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="accounts" selected="true">
+          <ion-icon name="wallet"></ion-icon>
+          <ion-label>Cuentas</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="transactions">
+          <ion-icon name="swap-horizontal"></ion-icon>
+          <ion-label>Movimientos</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="profile">
+          <ion-icon name="person"></ion-icon>
+          <ion-label>Perfil</ion-label>
+        </ion-tab-button>
+      </ion-tab-bar>
+    </ion-tabs>
+  </ion-toolbar>
+</ion-footer>

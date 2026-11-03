@@ -1,0 +1,35 @@
+{
+  "name": "fintech-mobile-app",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular",
+  "root": "src",
+  "sourceMap": true,
+  "watch": {
+    "ignore": [
+      "**/.history/**",
+      "**/.ionic/**",
+      "**/.vscode/**",
+      "**/node_modules/**",
+      "**/tmp/**",
+      "**/temp/**"
+    ]
+  },
+  "npmClient": "npm",
+  "build": {
+    "target": "es2022",
+    "outputPath": "www",
+    "emptyOutputPath": true
+  },
+  "serve": {
+    "port": 8100,
+    "host": "localhost",
+    "open": true,
+    "proxyType": "http"
+  },
+  "testing": {
+    "browsers": ["Chrome"],
+    "config": "./test-config/karma.conf.js"
+  }
+}

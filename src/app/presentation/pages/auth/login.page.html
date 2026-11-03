@@ -1,0 +1,55 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Iniciar Sesión</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="login-container">
+    <div class="logo-section">
+      <h1>Fintech App</h1>
+      <p>Gestiona tus finanzas</p>
+    </div>
+
+    <form (ngSubmit)="onLogin()">
+      <ion-item>
+        <ion-label position="floating">Correo electrónico</ion-label>
+        <ion-input
+          type="email"
+          [(ngModel)]="email"
+          name="email"
+          (ionChange)="onEmailChange($event)"
+          required>
+        </ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="floating">Contraseña</ion-label>
+        <ion-input
+          type="password"
+          [(ngModel)]="password"
+          name="password"
+          (ionChange)="onPasswordChange($event)"
+          required>
+        </ion-input>
+      </ion-item>
+
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <ion-button
+        type="submit"
+        expand="block"
+        [disabled]="isLoading"
+        class="login-button">
+        <ion-spinner *ngIf="isLoading" name="lines-small"></ion-spinner>
+        <span *ngIf="!isLoading">Iniciar Sesión</span>
+      </ion-button>
+    </form>
+
+    <div class="register-link">
+      <p>¿No tienes cuenta? <a (click)="goToRegister()">Regístrate</a></p>
+    </div>
+  </div>
+</ion-content>
